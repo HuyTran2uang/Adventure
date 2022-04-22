@@ -4,43 +4,85 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public bool isMoving;
+    public float MoveSpeed;
+    public float JumpForce;
 
     private float inputX;
-
     private Vector2 velocity;
-
+    private Vector3 scale;
+    //check
     private bool isGrounded;
-
     private bool isActing;
+    public bool isJumpPressed;
+
+    private void Start()
+    {
+        LoadInformation();
+        scale = PlayerController.Instance.transform.localScale;
+    }
+
+    private void Reset()
+    {
+        LoadInformation();
+    }
+
+    private void LoadInformation()
+    {
+        MoveSpeed = 5;
+        JumpForce = 5;
+    }
 
     private void Update()
     {
         isGrounded = GroundSensor.IsGrounded;
+        velocity = PlayerController.Instance.Rigidbody2D.velocity;
 
-        ChangeAnimation();
+        InputManager();
         Move();
+        Jump();
+        ChangeAnimation();
+        Flip();
     }
 
     private void FixedUpdate()
     {
         PlayerController.Instance.Rigidbody2D.velocity = velocity;
+        PlayerController.Instance.transform.localScale = scale;
+    }
+
+    private void InputManager()
+    {
+        inputX = Input.GetAxisRaw("Horizontal");
+        isJumpPressed = Input.GetKey("k");
     }
 
     private void Move()
     {
-        inputX = Input.GetAxisRaw("Horizontal");
+        if (isActing) { velocity.x = 0; return; }
+        velocity.x = inputX * MoveSpeed;
+    }
+
+    private void Jump()
+    {
+        if (isActing) return;
+        if (!isJumpPressed) return;
+        isJumpPressed = false;
+        if (!isGrounded) return;
+        velocity.y = JumpForce;
     }
 
     private void ChangeAnimation()
     {
         if (isActing) return;
-        if (isGrounded)
-        {
-            if (inputX != 0) AnimationWalk();
-            else AnimationIdle();
-        }
-        else AnimationJump();
+        if (!isGrounded) { AnimationJump(); return; }
+        if (inputX != 0) AnimationWalk(); else AnimationIdle();
+    }
+
+    private void Flip()
+    {
+        if (isActing) return;
+        if (inputX > 0) scale.x = 1;
+        if (inputX < 0) scale.x = -1;
     }
 
     private void AnimationIdle()
@@ -56,5 +98,10 @@ public class PlayerMovement : MonoBehaviour
     private void AnimationJump()
     {
         PlayerController.Instance.Animator.Play("Jump");
+    }
+
+    public void CheckActing(bool acting)
+    {
+        isActing = acting;
     }
 }
